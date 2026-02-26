@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Presenças</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #ffffff; --bg2: #f9fafb; --card: #ffffff; --input-bg: #f3f4f6;
+            --border: #e5e7eb; --border-focus: #2563eb;
+            --text: #111827; --text2: #6b7280; --muted: #9ca3af;
+            --blue: #2563eb; --blue-light: #eff6ff; --blue-border: #bfdbfe;
+            --green: #059669; --green-light: #ecfdf5; --green-border: #a7f3d0;
+            --red: #dc2626; --red-light: #fef2f2;
+            --amber: #d97706; --amber-light: #fffbeb; --amber-border: #fde68a;
+            --font: 'Inter', -apple-system, system-ui, sans-serif;
+            --r: 12px; --rs: 8px;
+        }
+        html, body { height: 100%; font-family: var(--font); background: var(--bg2); color: var(--text); -webkit-font-smoothing: antialiased; font-size: 14px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+        .wrap { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+        .view { display: none; flex-direction: column; flex: 1; animation: fadeIn .25s ease; }
+        .view.active { display: flex; }
+
+        /* ── Buttons ── */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 18px; border: 1px solid var(--border); border-radius: var(--rs); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; outline: none; background: white; color: var(--text); }
+        .btn:hover { background: var(--bg2); }
+        .btn:active { transform: scale(.98); }
+        .btn[disabled] { opacity: .4; pointer-events: none; }
+        .btn-blue { background: var(--blue); border-color: var(--blue); color: white; }
+        .btn-blue:hover { background: #1d4ed8; }
+        .btn-green { background: var(--green); border-color: var(--green); color: white; }
+        .btn-green:hover { background: #047857; }
+        .btn-red { border-color: #fecaca; color: var(--red); }
+        .btn-red:hover { background: var(--red-light); }
+        .btn-lg { padding: 11px 24px; font-size: 14px; border-radius: var(--r); }
+        .btn-block { width: 100%; }
+        .spin { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .5s linear infinite; display: inline-block; }
+        .spin-dark { border-color: rgba(0,0,0,.1); border-top-color: var(--text); }
+
+        /* ── Inputs ── */
+        input,select { width: 100%; padding: 9px 12px; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--rs); color: var(--text); font-family: var(--font); font-size: 14px; outline: none; transition: all .15s; }
+        input:focus,select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(37,99,235,.08); background: white; }
+        input::placeholder { color: var(--muted); }
+        .f { display: flex; flex-direction: column; gap: 3px; }
+        .f label { font-size: 11px; font-weight: 500; color: var(--text2); }
+        .f small { font-size: 11px; color: var(--muted); }
+        .f-err input { border-color: var(--red)!important; background: var(--red-light); }
+
+        /* ── Cards ── */
+        .c { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); }
+        .c-h { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .c-h h3 { font-size: 13px; font-weight: 600; }
+        .c-b { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .c-b .full { grid-column: 1/-1; }
+        .c-f { padding: 10px 16px; border-top: 1px solid var(--border); background: var(--bg2); border-radius: 0 0 var(--r) var(--r); display: flex; justify-content: flex-end; gap: 8px; }
+
+        /* ── Badges ── */
+        .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+        .badge-on { background: var(--green-light); color: var(--green); border: 1px solid var(--green-border); }
+        .badge-on::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); animation:pulse 2s infinite; }
+        .badge-off { background: var(--bg2); color: var(--muted); border: 1px solid var(--border); }
+
+        /* ── Toast ── */
+        .toast { position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(50px);padding:9px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;z-index:9999;transition:all .2s;opacity:0;pointer-events:none;background:var(--text);color:white;box-shadow:0 8px 24px rgba(0,0,0,.12); }
+        .toast.show { transform:translateX(-50%) translateY(0);opacity:1; }
+
+        /* ── Help ── */
+        .help-link { font-size: 12px; color: var(--blue); cursor: pointer; font-weight: 500; }
+        .help-link:hover { text-decoration: underline; }
+        .help-box { display:none; padding:12px 0 4px; font-size:12px; color:var(--text2); line-height:1.6; }
+        .help-box.open { display:block; }
+        .help-box ol { padding-left:16px; margin:4px 0; }
+        .help-box li { margin-bottom:3px; }
+
+        /* ═══ SETUP ═══ */
+        #v-setup .hd { padding: 16px 0 20px; }
+        #v-setup .hd h1 { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+        #v-setup .hd p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+        /* ═══ LIVE ═══ */
+        #v-live { align-items: center; text-align: center; }
+        .lbar { display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 0 18px; }
+        .lbar-l { display:flex;align-items:center;gap:8px; }
+        .lbar .nm { font-size:14px;font-weight:600; }
+        .lbar .mt { font-size:11px;color:var(--muted); }
+
+        .qr-w { position:relative; margin:0 auto 22px; display:inline-flex;align-items:center;justify-content:center; }
+        .qr-o { position:absolute;inset:-12px;z-index:0; }
+        .qr-o svg { width:100%;height:100%; }
+        .qr-o .tk { fill:none;stroke:#f3f4f6;stroke-width:3; }
+        .qr-o .pg { fill:none;stroke:var(--blue);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke .3s; }
+        .qr-o .pg.ur { stroke:var(--red); }
+        .qr-f { background:white;border-radius:14px;padding:16px;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,.06);position:relative;z-index:1;transition:opacity .2s,transform .2s; }
+        .qr-f.fl { opacity:.3;transform:scale(.97); }
+        .qr-f #qrcode { width:200px;height:200px; }
+        .qr-f #qrcode img,.qr-f #qrcode canvas { width:100%!important;height:100%!important;border-radius:4px; }
+
+        .cd { font-size:44px;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--text);margin-bottom:1px; }
+        .cd.ur { color:var(--red); }
+        .cd-l { font-size:12px;color:var(--muted);margin-bottom:18px; }
+
+        .sts { display:flex;gap:28px;justify-content:center;padding:14px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);width:100%;margin-bottom:16px; }
+        .st { text-align:center; }
+        .st-v { font-size:22px;font-weight:700; }
+        .st-l { font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:1px; }
+
+        .tol { display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:500;width:100%;max-width:320px;margin-bottom:14px; }
+        .tol.on { background:var(--amber-light);border:1px solid var(--amber-border);color:var(--amber); }
+        .tol.off { background:var(--red-light);border:1px solid #fecaca;color:var(--red); }
+
+        .lact { display:flex;gap:8px;justify-content:center; }
+
+        .lg { width:100%;margin-top:16px; }
+        .lg-h { display:flex;justify-content:space-between;align-items:center;margin-bottom:6px; }
+        .lg-h h4 { font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em; }
+        .lg-i { display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:3px;animation:fadeIn .25s;background:white;font-size:13px; }
+        .lg-i .ln { font-weight:500; }
+        .lg-i .lt { font-size:11px;color:var(--muted); }
+
+        /* ═══ STUDENT ═══ */
+        #v-student { align-items:center;justify-content:center;min-height:100vh;background:white; }
+        .sc { background:white;border-radius:16px;padding:28px 22px;width:100%;max-width:340px;text-align:center; }
+        .sc h1 { font-size:17px;font-weight:700;margin-bottom:2px; }
+        .sc .sub { font-size:12px;color:var(--muted);margin-bottom:20px; }
+        .sc .f { margin-bottom:10px;text-align:left; }
+        .sc input { text-align:center;font-size:20px;padding:14px;font-weight:600;letter-spacing:.06em; }
+        .sc .btn { margin-top:4px;padding:13px;font-size:14px; }
+        .sc-note { font-size:10px;color:var(--muted);margin-top:12px; }
+
+        .sa { text-align:center; }
+        .sa .rng { width:56px;height:56px;border-radius:50%;background:var(--blue-light);border:2px solid var(--blue-border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;animation:pulse 1.2s infinite; }
+        .sa h2 { font-size:15px;font-weight:600;margin-bottom:3px; }
+        .sa p { font-size:13px;color:var(--text2); }
+        .sa .dn { font-size:20px;font-weight:700;color:var(--blue);margin-top:4px;letter-spacing:.03em; }
+
+        .sok { text-align:center; }
+        .sok .ck { width:56px;height:56px;border-radius:50%;background:var(--green-light);border:2px solid var(--green-border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;animation:pop .35s cubic-bezier(.34,1.56,.64,1);color:var(--green); }
+        .sok h2 { font-size:17px;font-weight:700;color:var(--green);margin-bottom:3px; }
+        .sok p { color:var(--text2);font-size:13px; }
+        .sok .ts { font-size:12px;color:var(--muted);margin-top:10px;padding:3px 10px;background:var(--bg2);border-radius:100px;display:inline-block; }
+
+        .sdu { text-align:center; }
+        .sdu .ic { width:56px;height:56px;border-radius:50%;background:var(--blue-light);border:2px solid var(--blue-border);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;color:var(--blue); }
+        .sdu h2 { font-size:15px;font-weight:600;color:var(--blue);margin-bottom:3px; }
+        .sdu p { color:var(--text2);font-size:12px; }
+
+        .ser { text-align:center; }
+        .ser .xc { width:56px;height:56px;border-radius:50%;background:var(--red-light);border:2px solid #fecaca;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;color:var(--red); }
+        .ser h2 { font-size:15px;font-weight:700;color:var(--red);margin-bottom:3px; }
+        .ser p { color:var(--text2);font-size:12px;margin-bottom:14px;line-height:1.5; }
+
+        .fs-b { position:fixed;top:10px;right:10px;z-index:100;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:white;border:1px solid var(--border);border-radius:var(--rs);color:var(--muted);cursor:pointer;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.06); }
+        .fs-b:hover { background:var(--bg2);color:var(--text); }
+
+        @media(max-width:640px){
+            .c-b{grid-template-columns:1fr;}
+            .lbar{flex-direction:column;gap:6px;text-align:center;}
+            .qr-f #qrcode{width:180px;height:180px;}
+            .cd{font-size:36px;}
+            .sts{gap:16px;}.st-v{font-size:18px;}
+        }
+    </style>
+</head>
+<body>
+    <div id="toast" class="toast"></div>
+    <button class="fs-b" id="fs-b" title="Ecrã inteiro">⛶</button>
+
+    <div class="wrap">
+        <!-- SETUP -->
+        <div id="v-setup" class="view active">
+            <div class="hd"><h1>Presenças</h1><p>Registo por QR code · GitHub Pages</p></div>
+
+            <div class="c" style="margin-bottom:10px;">
+                <div class="c-h"><h3>GitHub</h3><span class="help-link" onclick="this.closest('.c').querySelector('.help-box').classList.toggle('open')">Como criar token?</span></div>
+                <div class="c-b">
+                    <div class="f full"><label>Repositório</label><input type="text" id="cfg-repo" placeholder="utilizador/presencas"></div>
+                    <div class="f full"><label>Personal Access Token</label><input type="text" id="cfg-pat" placeholder="github_pat_..."></div>
+                    <div class="full"><button class="btn btn-blue btn-block" id="btn-test">Testar conexão</button></div>
+                    <div class="full help-box"><ol><li>github.com → Settings → Developer Settings → Fine-grained tokens</li><li>Generate new token → Repository: Only select → o teu repo</li><li>Permissions → Issues → Read and Write</li><li>Generate e cola aqui</li></ol></div>
+                </div>
+            </div>
+
+            <div class="c" style="margin-bottom:10px;">
+                <div class="c-h"><h3>Sessão</h3></div>
+                <div class="c-b">
+                    <div class="f full"><label>Disciplina</label><input type="text" id="cfg-cls" placeholder="Ex: Simulação Empresarial"></div>
+                    <div class="f"><label>Duração do código (seg)</label><input type="number" id="cfg-dur" min="10" max="300" value="45"><small>Tempo até o QR mudar</small></div>
+                    <div class="f"><label>Tolerância (min)</label><input type="number" id="cfg-tol" min="1" max="60" value="10"><small>Tempo total para registar</small></div>
+                </div>
+                <div class="c-f">
+                    <button class="btn" id="btn-clr">Limpar</button>
+                    <button class="btn btn-green btn-lg" id="btn-go" disabled>Iniciar sessão</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE -->
+        <div id="v-live" class="view">
+            <div class="lbar">
+                <div class="lbar-l">
+                    <span class="badge badge-on" id="lv-b">Ativo</span>
+                    <div><div class="nm" id="lv-nm"></div><div class="mt" id="lv-mt"></div></div>
+                </div>
+                <button class="btn" id="btn-cf" style="padding:5px 10px;font-size:11px;">Configuração</button>
+            </div>
+            <div class="qr-w">
+                <div class="qr-o"><svg viewBox="0 0 268 268"><circle class="tk" cx="134" cy="134" r="130"/><circle class="pg" id="rp" cx="134" cy="134" r="130"/></svg></div>
+                <div class="qr-f" id="qf"><div id="qrcode"></div></div>
+            </div>
+            <div class="cd" id="lv-cd">45</div>
+            <div class="cd-l">segundos</div>
+            <div class="sts">
+                <div class="st"><div class="st-v" id="sn">0</div><div class="st-l">Presenças</div></div>
+                <div class="st"><div class="st-v" id="sc">0</div><div class="st-l">Códigos</div></div>
+                <div class="st"><div class="st-v" id="si">--</div><div class="st-l">Issue</div></div>
+            </div>
+            <div class="tol on" id="tol" style="display:none;"></div>
+            <div class="lact">
+                <button class="btn btn-red" id="btn-stp">Parar sessão</button>
+                <button class="btn" id="btn-csv">Exportar CSV</button>
+            </div>
+            <div class="lg" id="lg" style="display:none;">
+                <div class="lg-h"><h4>Registos</h4><span style="font-size:11px;color:var(--muted);" id="lg-t"></span></div>
+                <div id="lg-l"></div>
+            </div>
+        </div>
+
+        <!-- STUDENT -->
+        <div id="v-student" class="view">
+            <div id="s-auto" style="display:none;"><div class="sc"><div class="sa"><div class="rng">📡</div><h2>A registar...</h2><p id="xa-i"></p><div class="dn" id="xa-n"></div></div></div></div>
+            <div id="s-form" style="display:none;"><div class="sc">
+                <h1>Marcar presença</h1><div class="sub" id="xf-i"></div>
+                <div class="f" id="xf-w"><label>Número de aluno</label><input type="text" id="xf-n" placeholder="Ex: 20230456" inputmode="numeric" autocomplete="off"></div>
+                <button class="btn btn-green btn-block" id="btn-rg">Registar</button>
+                <div class="sc-note">O telemóvel fica associado a este número. Da próxima vez é automático.</div>
+            </div></div>
+            <div id="s-ok" style="display:none;"><div class="sc"><div class="sok"><div class="ck">✓</div><h2>Presença registada</h2><p id="xo-n"></p><div class="ts" id="xo-t"></div></div></div></div>
+            <div id="s-dup" style="display:none;"><div class="sc"><div class="sdu"><div class="ic">✓</div><h2>Já registado</h2><p id="xd-n"></p><p style="margin-top:6px;">Presença já marcada nos últimos 5 minutos.</p></div></div></div>
+            <div id="s-fail" style="display:none;"><div class="sc"><div class="ser"><div class="xc">✕</div><h2 id="xe-t">Código expirado</h2><p id="xe-m">Este QR já não é válido. Faz scan do código atual.</p><button class="btn btn-blue btn-block" onclick="location.href=location.pathname">Tentar novamente</button></div></div></div>
+        </div>
+    </div>
+
+<script>
+(function(){
+'use strict';
+
+function totp(k,e){let s=k+'-'+e+'-X',h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h).toString(36).toUpperCase().slice(0,6);}
+function ep(d){return Math.floor(Date.now()/(d*1000));}
+function vTok(t,k,d){const e=ep(d);return t===totp(k,e)||t===totp(k,e-1);}
+
+function pack(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function unpack(s){try{return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));} catch{return null;}}
+
+const DK='att_dev_v2',DUPK='att_dup_v1';
+function getDev(){try{const d=JSON.parse(localStorage.getItem(DK));return(d&&d.id&&d.num)?d:null;}catch{return null;}}
+function regDev(num){const d={id:crypto.randomUUID?crypto.randomUUID():'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),num:num.trim(),at:new Date().toISOString()};localStorage.setItem(DK,JSON.stringify(d));return d;}
+function isDup(sess){try{const d=JSON.parse(localStorage.getItem(DUPK)||'{}');return d.sess===sess&&d.ts&&(Date.now()-d.ts)<300000;}catch{return false;}}
+function markDup(sess){try{localStorage.setItem(DUPK,JSON.stringify({sess,ts:Date.now()}));}catch{}}
+
+const GH={
+    base:'https://api.github.com',
+    h(p){return{'Authorization':'Bearer '+p,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'};},
+    async test(r,p){const x=await fetch(this.base+'/repos/'+r,{headers:this.h(p)});if(!x.ok)throw new Error('Repo não encontrado');return x.json();},
+    async newIssue(r,p,t,b){const x=await fetch(this.base+'/repos/'+r+'/issues',{method:'POST',headers:this.h(p),body:JSON.stringify({title:t,body:b,labels:['presenca']})});if(!x.ok)throw new Error('Erro: '+x.status);return x.json();},
+    async comment(r,p,n,b){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments',{method:'POST',headers:this.h(p),body:JSON.stringify({body:b})});if(!x.ok){const e=await x.json().catch(()=>({}));throw new Error(e.message||x.status);}return x.json();},
+    async comments(r,p,n){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments?per_page=100',{headers:this.h(p)});return x.ok?x.json():[];},
+    async close(r,p,n){fetch(this.base+'/repos/'+r+'/issues/'+n,{method:'PATCH',headers:this.h(p),body:JSON.stringify({state:'closed'})});}
+};
+
+const LS='att_cfg_v6';
+let S={sid:'',inum:null,on:false,tmr:null,sec:45,total:45,codes:0,atts:[],poll:null,tolTmr:null,tolTk:null,tolEnd:null};
+const $=id=>document.getElementById(id);
+let qr=null;
+const rp=$('rp'),rC=2*Math.PI*130;
+if(rp){rp.style.strokeDasharray=rC;rp.style.strokeDashoffset='0';rp.style.transform='rotate(-90deg)';rp.style.transformOrigin='134px 134px';}
+let tt;function toast(m){clearTimeout(tt);$('toast').textContent=m;$('toast').classList.add('show');tt=setTimeout(()=>$('toast').classList.remove('show'),2500);}
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(id).classList.add('active');}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function hms(){return new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function dmy(){return new Date().toLocaleDateString('pt-PT');}
+
+function loadCfg(){try{const d=JSON.parse(localStorage.getItem(LS)||'{}');if(d.repo)$('cfg-repo').value=d.repo;if(d.pat)$('cfg-pat').value=d.pat;if(d.cls)$('cfg-cls').value=d.cls;if(d.dur)$('cfg-dur').value=d.dur;if(d.tol)$('cfg-tol').value=d.tol;if(d.pat&&d.repo)$('btn-go').disabled=false;}catch{}}
+function saveCfg(){try{localStorage.setItem(LS,JSON.stringify({repo:$('cfg-repo').value,pat:$('cfg-pat').value,cls:$('cfg-cls').value,dur:$('cfg-dur').value,tol:$('cfg-tol').value}));}catch{}}
+function cfg(){return{repo:$('cfg-repo').value.trim(),pat:$('cfg-pat').value.trim(),cls:$('cfg-cls').value.trim()||'Aula',dur:parseInt($('cfg-dur').value)||45,tol:parseInt($('cfg-tol').value)||10};}
+
+async function start(){
+    const c=cfg();if(!c.repo||!c.pat){toast('Configura o GitHub');return;}
+    saveCfg();$('btn-go').disabled=true;$('btn-go').innerHTML='<span class="spin"></span>';
+    try{
+        S.sid='S'+Date.now().toString(36).toUpperCase().slice(-6);S.total=c.dur;S.sec=c.dur;S.codes=0;S.atts=[];
+        const d=dmy();
+        const iss=await GH.newIssue(c.repo,c.pat,c.cls+' — '+d,'**Disciplina:** '+c.cls+'\n**Data:** '+d+'\n**Hora:** '+hms()+'\n**Sessão:** '+S.sid+'\n**Tolerância:** '+c.tol+' min');
+        S.inum=iss.number;S.on=true;
+        $('qrcode').innerHTML='';qr=new QRCode($('qrcode'),{width:200,height:200,colorDark:'#111827',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+        $('lv-nm').textContent=c.cls;$('lv-mt').textContent=d+' · '+hms();
+        $('si').textContent='#'+S.inum;$('sn').textContent='0';$('sc').textContent='0';
+        $('lg').style.display='none';$('lg-l').innerHTML='';
+        $('lv-b').className='badge badge-on';$('lv-b').innerHTML='<span></span>Ativo';
+        show('v-live');mkQR();
+        S.tmr=setInterval(()=>{S.sec--;rT();if(S.sec<=0)mkQR();},1000);
+        S.tolEnd=Date.now()+c.tol*60000;$('tol').style.display='flex';$('tol').className='tol on';rTol();
+        S.tolTk=setInterval(rTol,1000);S.tolTmr=setTimeout(end,c.tol*60000);
+        S.poll=setInterval(pollA,5000);toast('Sessão #'+S.inum+' criada');
+    }catch(e){toast('Erro: '+e.message);}
+    finally{$('btn-go').disabled=false;$('btn-go').textContent='Iniciar sessão';}
+}
+function stop(){S.on=false;clearInterval(S.tmr);clearInterval(S.tolTk);clearTimeout(S.tolTmr);clearInterval(S.poll);$('lv-b').className='badge badge-off';$('lv-b').textContent='Parado';const c=cfg();if(S.inum)GH.close(c.repo,c.pat,S.inum);toast('Sessão encerrada');}
+function end(){stop();$('tol').className='tol off';$('tol').textContent='Tempo esgotado — registo encerrado';}
+
+function mkQR(){
+    if(!S.on)return;const c=cfg(),e=ep(c.dur),tok=totp(S.sid,e);
+    const url=location.origin+location.pathname+'#'+pack({t:tok,s:S.sid,d:c.dur,r:c.repo,p:c.pat,i:S.inum,c:c.cls});
+    $('qf').classList.add('fl');setTimeout(()=>{qr.clear();qr.makeCode(url);$('qf').classList.remove('fl');},120);
+    S.sec=c.dur;S.codes++;$('sc').textContent=S.codes;rT();
+}
+function rT(){$('lv-cd').textContent=S.sec;const u=S.sec<=5;$('lv-cd').className='cd'+(u?' ur':'');rp.classList.toggle('ur',u);rp.style.strokeDashoffset=rC*(1-S.sec/S.total);}
+function rTol(){if(!S.tolEnd)return;const l=S.tolEnd-Date.now();if(l<=0)return;$('tol').textContent='Tolerância: '+Math.floor(l/60000)+'m '+String(Math.floor((l%60000)/1000)).padStart(2,'0')+'s';}
+
+async function pollA(){const c=cfg();try{const cms=await GH.comments(c.repo,c.pat,S.inum);const p=cms.map(m=>{try{return JSON.parse(m.body);}catch{return null;}}).filter(x=>x&&x._t==='a');if(p.length>S.atts.length){const nw=p.slice(S.atts.length);S.atts=p;$('sn').textContent=S.atts.length;$('lg').style.display='block';$('lg-t').textContent=S.atts.length;nw.forEach(a=>{const d=document.createElement('div');d.className='lg-i';d.innerHTML='<span class="ln">'+esc(a.num)+'</span><span class="lt">'+esc(a.hora)+'</span>';$('lg-l').prepend(d);});}}catch{}}
+
+function csv(){if(!S.atts.length){toast('Sem registos');return;}const c=cfg();const h='Número,Hora,Disciplina,Data,Sessão,DeviceID';const rows=S.atts.map(a=>[a.num,a.hora,a.disc,a.data,a.sess,a.did||''].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));const b=new Blob(['\uFEFF'+h+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=('presencas_'+c.cls+'_'+dmy()+'.csv').replace(/[\s\/]/g,'_');a.click();URL.revokeObjectURL(u);toast('CSV exportado');}
+
+function initStu(data){
+    show('v-student');$('fs-b').style.display='none';document.body.style.background='white';
+    if(!vTok(data.t,data.s,data.d)){showS('fail');return;}
+    const dev=getDev();
+    if(dev&&isDup(data.s)){showS('dup');$('xd-n').textContent='Nº '+dev.num;return;}
+    if(dev){showS('auto');$('xa-i').textContent=data.c;$('xa-n').textContent='Nº '+dev.num;setTimeout(()=>autoSub(data,dev),500);}
+    else{showS('form');$('xf-i').textContent=data.c+' · '+dmy();window._d=data;setTimeout(()=>$('xf-n').focus(),150);}
+}
+function showS(s){['s-auto','s-form','s-ok','s-dup','s-fail'].forEach(id=>$(id).style.display='none');({auto:'s-auto',form:'s-form',ok:'s-ok',dup:'s-dup',fail:'s-fail'})[s]&&($(({auto:'s-auto',form:'s-form',ok:'s-ok',dup:'s-dup',fail:'s-fail'})[s]).style.display='block');}
+
+async function autoSub(data,dev){
+    if(!vTok(data.t,data.s,data.d)){showS('fail');return;}
+    const hora=hms();const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,ts:new Date().toISOString()};
+    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);}
+    catch{markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;}
+}
+
+async function firstReg(){
+    const data=window._d;if(!data)return;const num=$('xf-n').value.trim();
+    if(!num){$('xf-w').classList.add('f-err');$('xf-n').focus();return;}
+    if(!vTok(data.t,data.s,data.d)){showS('fail');$('xe-t').textContent='Código expirado';$('xe-m').textContent='Faz scan do QR atual.';return;}
+    const btn=$('btn-rg');btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
+    const dev=regDev(num);const hora=hms();
+    const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,first:true,ts:new Date().toISOString()};
+    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);}
+    catch(e){btn.disabled=false;btn.textContent='Registar';toast('Erro — tenta novamente');localStorage.removeItem(DK);}
+}
+
+function route(){const h=location.hash.slice(1);if(h){const d=unpack(h);if(d&&d.t&&d.s){initStu(d);return;}}loadCfg();show('v-setup');}
+
+$('btn-test').addEventListener('click',async()=>{const r=$('cfg-repo').value.trim(),p=$('cfg-pat').value.trim();if(!r||!p){toast('Preenche repo e token');return;}$('btn-test').disabled=true;$('btn-test').innerHTML='<span class="spin"></span>';try{await GH.test(r,p);toast('Conectado');saveCfg();$('btn-go').disabled=false;}catch(e){toast('Erro: '+e.message);}finally{$('btn-test').disabled=false;$('btn-test').textContent='Testar conexão';}});
+$('btn-go').addEventListener('click',start);
+$('btn-stp').addEventListener('click',stop);
+$('btn-csv').addEventListener('click',csv);
+$('btn-rg').addEventListener('click',firstReg);
+$('btn-cf').addEventListener('click',()=>{if(S.on&&!confirm('Parar sessão?'))return;if(S.on)stop();show('v-setup');});
+$('btn-clr').addEventListener('click',()=>{if(confirm('Limpar?')){localStorage.removeItem(LS);location.reload();}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&$('v-student').classList.contains('active')&&$('s-form').style.display!=='none'){e.preventDefault();firstReg();}});
+document.querySelectorAll('.f').forEach(f=>{const i=f.querySelector('input');if(i)i.addEventListener('input',()=>f.classList.remove('f-err'));});
+$('fs-b').addEventListener('click',()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen();});
+route();
+})();
+</script>
+</body>
+</html>

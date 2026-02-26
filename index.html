@@ -271,7 +271,7 @@ const GH={
     async test(r,p){const x=await fetch(this.base+'/repos/'+r,{headers:this.h(p)});if(!x.ok)throw new Error('Repo não encontrado');return x.json();},
     async newIssue(r,p,t,b){const x=await fetch(this.base+'/repos/'+r+'/issues',{method:'POST',headers:this.h(p),body:JSON.stringify({title:t,body:b,labels:['presenca']})});if(!x.ok)throw new Error('Erro: '+x.status);return x.json();},
     async comment(r,p,n,b){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments',{method:'POST',headers:this.h(p),body:JSON.stringify({body:b})});if(!x.ok){const e=await x.json().catch(()=>({}));throw new Error(e.message||x.status);}return x.json();},
-    async comments(r,p,n){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments?per_page=100',{headers:this.h(p)});return x.ok?x.json():[];},
+    async comments(r,p,n){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments?per_page=100&_='+Date.now(),{headers:this.h(p),cache:'no-store'});return x.ok?x.json():[];},
     async close(r,p,n){fetch(this.base+'/repos/'+r+'/issues/'+n,{method:'PATCH',headers:this.h(p),body:JSON.stringify({state:'closed'})});}
 };
 

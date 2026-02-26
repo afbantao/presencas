@@ -288,7 +288,7 @@ function markDup(sess){try{localStorage.setItem(DUPK,JSON.stringify({sess,ts:Dat
 const GH={
     base:'https://api.github.com',
     hw(p){return{'Authorization':'Bearer '+p,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'};},
-    hr(p){return{'Authorization':'Bearer '+p,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','If-None-Match':'','Cache-Control':'no-cache'};},
+    hr(p){return{'Authorization':'Bearer '+p,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};},
     async test(r,p){const x=await fetch(this.base+'/repos/'+r,{headers:this.hr(p)});if(!x.ok)throw new Error('Repo não encontrado');return x.json();},
     async newIssue(r,p,t,b){const x=await fetch(this.base+'/repos/'+r+'/issues',{method:'POST',headers:this.hw(p),body:JSON.stringify({title:t,body:b,labels:['presenca']})});if(!x.ok)throw new Error('Erro: '+x.status);return x.json();},
     async comment(r,p,n,b){const x=await fetch(this.base+'/repos/'+r+'/issues/'+n+'/comments',{method:'POST',headers:this.hw(p),body:JSON.stringify({body:b})});if(!x.ok){const e=await x.json().catch(()=>({}));throw new Error(e.message||x.status);}return x.json();},

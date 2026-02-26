@@ -156,6 +156,7 @@
         .ser .xc { width:56px;height:56px;border-radius:50%;background:var(--red-light);border:2px solid #fecaca;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;color:var(--red); }
         .ser h2 { font-size:15px;font-weight:700;color:var(--red);margin-bottom:3px; }
         .ser p { color:var(--text2);font-size:12px;margin-bottom:14px;line-height:1.5; }
+        .ac { font-size:11px!important;color:var(--muted)!important;margin-top:12px!important;animation:pulse 1s infinite; }
 
         .fs-b { position:fixed;top:10px;right:10px;z-index:100;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:white;border:1px solid var(--border);border-radius:var(--rs);color:var(--muted);cursor:pointer;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.06); }
         .fs-b:hover { background:var(--bg2);color:var(--text); }
@@ -189,11 +190,29 @@
             </div>
 
             <div class="c" style="margin-bottom:10px;">
+                <div class="c-h"><h3>Google Sheets <span style="font-size:11px;font-weight:400;color:var(--muted);">(opcional)</span></h3></div>
+                <div class="c-b">
+                    <div class="f full"><label>URL do Web App</label><input type="text" id="cfg-gs" placeholder="https://script.google.com/macros/s/.../exec"></div>
+                    <div class="full"><button class="btn btn-block" id="btn-gs-test">Testar Sheets</button></div>
+                    <div class="full help-box"><ol><li>Abre a Google Sheet → Extensões → Apps Script</li><li>Apaga tudo e cola:<br><code style="font-size:11px;display:block;background:#f1f5f9;padding:8px;border-radius:6px;margin:6px 0;white-space:pre;overflow-x:auto;">function doPost(e){
+  var d=JSON.parse(e.postData.contents);
+  var s=SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if(s.getLastRow()===0)s.appendRow(['Número','Hora','Data','Disciplina','Sessão']);
+  s.appendRow([d.num,d.hora,d.data,d.disc,d.sess]);
+  return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e){
+  return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+}</code></li><li>Implementar → Nova implementação → Web App</li><li>Executar como: eu / Quem acede: Qualquer pessoa</li><li>Copiar URL e colar aqui</li></ol></div>
+                </div>
+            </div>
+
+            <div class="c" style="margin-bottom:10px;">
                 <div class="c-h"><h3>Sessão</h3></div>
                 <div class="c-b">
                     <div class="f full"><label>Disciplina</label><input type="text" id="cfg-cls" placeholder="Ex: Simulação Empresarial"></div>
                     <div class="f"><label>Duração do código (seg)</label><input type="number" id="cfg-dur" min="10" max="300" value="45"><small>Tempo até o QR mudar</small></div>
-                    <div class="f"><label>Tolerância (min)</label><input type="number" id="cfg-tol" min="1" max="60" value="10"><small>Tempo total para registar</small></div>
+                    <div class="f"><label>Encerrar às</label><input type="time" id="cfg-tol" value="09:30"><small>Hora limite para registar</small></div>
                 </div>
                 <div class="c-f">
                     <button class="btn" id="btn-clr">Limpar</button>
@@ -242,9 +261,9 @@
                 <button class="btn btn-green btn-block" id="btn-rg">Registar</button>
                 <div class="sc-note">O telemóvel fica associado a este número. Da próxima vez é automático.</div>
             </div></div>
-            <div id="s-ok" style="display:none;"><div class="sc"><div class="sok"><div class="ck">✓</div><h2>Presença registada</h2><p id="xo-n"></p><div class="ts" id="xo-t"></div></div></div></div>
-            <div id="s-dup" style="display:none;"><div class="sc"><div class="sdu"><div class="ic">✓</div><h2>Já registado</h2><p id="xd-n"></p><p style="margin-top:6px;">Presença já marcada nos últimos 5 minutos.</p></div></div></div>
-            <div id="s-fail" style="display:none;"><div class="sc"><div class="ser"><div class="xc">✕</div><h2 id="xe-t">Código expirado</h2><p id="xe-m">Este QR já não é válido. Faz scan do código atual.</p><button class="btn btn-blue btn-block" onclick="location.href=location.pathname">Tentar novamente</button></div></div></div>
+            <div id="s-ok" style="display:none;"><div class="sc"><div class="sok"><div class="ck">✓</div><h2>Presença registada</h2><p id="xo-n"></p><div class="ts" id="xo-t"></div><p class="ac" id="ac-ok">A fechar em 2s...</p></div></div></div>
+            <div id="s-dup" style="display:none;"><div class="sc"><div class="sdu"><div class="ic">✓</div><h2>Já registado</h2><p id="xd-n"></p><p style="margin-top:6px;">Presença já marcada nos últimos 5 minutos.</p><p class="ac" id="ac-dup">A fechar em 2s...</p></div></div></div>
+            <div id="s-fail" style="display:none;"><div class="sc"><div class="ser"><div class="xc">✕</div><h2 id="xe-t">Código expirado</h2><p id="xe-m">Este QR já não é válido. Faz scan do código atual.</p><p class="ac" id="ac-fail">A fechar em 2s...</p></div></div></div>
         </div>
     </div>
 
@@ -276,6 +295,13 @@ const GH={
     async close(r,p,n){fetch(this.base+'/repos/'+r+'/issues/'+n,{method:'PATCH',headers:this.hw(p),body:JSON.stringify({state:'closed'})});}
 };
 
+async function postSheets(url,rec){
+    if(!url)return;
+    try{await fetch(url,{method:'POST',body:JSON.stringify({num:rec.num,hora:rec.hora,data:rec.data,disc:rec.disc,sess:rec.sess}),headers:{'Content-Type':'text/plain'},mode:'no-cors'});}catch(e){console.warn('Sheets:',e);}
+}
+
+function autoClose(){setTimeout(()=>{window.close();document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:#6b7280;font-size:14px;">Podes fechar esta janela.</div>';},2000);}
+
 const LS='att_cfg_v6';
 let S={sid:'',inum:null,on:false,tmr:null,sec:45,total:45,codes:0,atts:[],poll:null,tolTmr:null,tolTk:null,tolEnd:null};
 const $=id=>document.getElementById(id);
@@ -288,17 +314,21 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 function hms(){return new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function dmy(){return new Date().toLocaleDateString('pt-PT');}
 
-function loadCfg(){try{const d=JSON.parse(localStorage.getItem(LS)||'{}');if(d.repo)$('cfg-repo').value=d.repo;if(d.pat)$('cfg-pat').value=d.pat;if(d.cls)$('cfg-cls').value=d.cls;if(d.dur)$('cfg-dur').value=d.dur;if(d.tol)$('cfg-tol').value=d.tol;if(d.pat&&d.repo)$('btn-go').disabled=false;}catch{}}
-function saveCfg(){try{localStorage.setItem(LS,JSON.stringify({repo:$('cfg-repo').value,pat:$('cfg-pat').value,cls:$('cfg-cls').value,dur:$('cfg-dur').value,tol:$('cfg-tol').value}));}catch{}}
-function cfg(){return{repo:$('cfg-repo').value.trim(),pat:$('cfg-pat').value.trim(),cls:$('cfg-cls').value.trim()||'Aula',dur:parseInt($('cfg-dur').value)||45,tol:parseInt($('cfg-tol').value)||10};}
+function loadCfg(){try{const d=JSON.parse(localStorage.getItem(LS)||'{}');if(d.repo)$('cfg-repo').value=d.repo;if(d.pat)$('cfg-pat').value=d.pat;if(d.cls)$('cfg-cls').value=d.cls;if(d.dur)$('cfg-dur').value=d.dur;if(d.tol)$('cfg-tol').value=d.tol;if(d.gs)$('cfg-gs').value=d.gs;if(d.pat&&d.repo)$('btn-go').disabled=false;}catch{}}
+function saveCfg(){try{localStorage.setItem(LS,JSON.stringify({repo:$('cfg-repo').value,pat:$('cfg-pat').value,cls:$('cfg-cls').value,dur:$('cfg-dur').value,tol:$('cfg-tol').value,gs:$('cfg-gs').value}));}catch{}}
+function cfg(){return{repo:$('cfg-repo').value.trim(),pat:$('cfg-pat').value.trim(),cls:$('cfg-cls').value.trim()||'Aula',dur:parseInt($('cfg-dur').value)||45,tol:$('cfg-tol').value||'09:30',gs:$('cfg-gs').value.trim()};}
 
 async function start(){
     const c=cfg();if(!c.repo||!c.pat){toast('Configura o GitHub');return;}
+    const tolParts=c.tol.split(':');const tolH=parseInt(tolParts[0]),tolM=parseInt(tolParts[1])||0;
+    const now=new Date();const endTime=new Date(now.getFullYear(),now.getMonth(),now.getDate(),tolH,tolM,0);
+    if(endTime<=now){toast('A hora limite já passou');return;}
+    const tolMs=endTime.getTime()-now.getTime();
     saveCfg();$('btn-go').disabled=true;$('btn-go').innerHTML='<span class="spin"></span>';
     try{
         S.sid='S'+Date.now().toString(36).toUpperCase().slice(-6);S.total=c.dur;S.sec=c.dur;S.codes=0;S.atts=[];
         const d=dmy();
-        const iss=await GH.newIssue(c.repo,c.pat,c.cls+' — '+d,'**Disciplina:** '+c.cls+'\n**Data:** '+d+'\n**Hora:** '+hms()+'\n**Sessão:** '+S.sid+'\n**Tolerância:** '+c.tol+' min');
+        const iss=await GH.newIssue(c.repo,c.pat,c.cls+' — '+d,'**Disciplina:** '+c.cls+'\n**Data:** '+d+'\n**Hora:** '+hms()+'\n**Sessão:** '+S.sid+'\n**Encerra às:** '+c.tol);
         S.inum=iss.number;S.on=true;
         $('qrcode').innerHTML='';qr=new QRCode($('qrcode'),{width:200,height:200,colorDark:'#111827',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
         $('lv-nm').textContent=c.cls;$('lv-mt').textContent=d+' · '+hms();
@@ -307,9 +337,9 @@ async function start(){
         $('lv-b').className='badge badge-on';$('lv-b').innerHTML='<span></span>Ativo';
         show('v-live');mkQR();
         S.tmr=setInterval(()=>{S.sec--;rT();if(S.sec<=0)mkQR();},1000);
-        S.tolEnd=Date.now()+c.tol*60000;$('tol').style.display='flex';$('tol').className='tol on';rTol();
-        S.tolTk=setInterval(rTol,1000);S.tolTmr=setTimeout(end,c.tol*60000);
-        S.poll=setInterval(pollA,2000);toast('Sessão #'+S.inum+' criada');
+        S.tolEnd=endTime.getTime();$('tol').style.display='flex';$('tol').className='tol on';rTol();
+        S.tolTk=setInterval(rTol,1000);S.tolTmr=setTimeout(end,tolMs);
+        S.poll=setInterval(pollA,2000);toast('Sessão #'+S.inum+' · encerra às '+c.tol);
     }catch(e){toast('Erro: '+e.message);}
     finally{$('btn-go').disabled=false;$('btn-go').textContent='Iniciar sessão';}
 }
@@ -318,12 +348,12 @@ function end(){stop();$('tol').className='tol off';$('tol').textContent='Tempo e
 
 function mkQR(){
     if(!S.on)return;const c=cfg(),e=ep(c.dur),tok=totp(S.sid,e);
-    const url=location.origin+location.pathname+'#'+pack({t:tok,s:S.sid,d:c.dur,r:c.repo,p:c.pat,i:S.inum,c:c.cls});
+    const url=location.origin+location.pathname+'#'+pack({t:tok,s:S.sid,d:c.dur,r:c.repo,p:c.pat,i:S.inum,c:c.cls,g:c.gs||''});
     $('qf').classList.add('fl');setTimeout(()=>{qr.clear();qr.makeCode(url);$('qf').classList.remove('fl');},120);
     S.sec=c.dur;S.codes++;$('sc').textContent=S.codes;rT();
 }
 function rT(){$('lv-cd').textContent=S.sec;const u=S.sec<=5;$('lv-cd').className='cd'+(u?' ur':'');rp.classList.toggle('ur',u);rp.style.strokeDashoffset=rC*(1-S.sec/S.total);}
-function rTol(){if(!S.tolEnd)return;const l=S.tolEnd-Date.now();if(l<=0)return;$('tol').textContent='Tolerância: '+Math.floor(l/60000)+'m '+String(Math.floor((l%60000)/1000)).padStart(2,'0')+'s';}
+function rTol(){if(!S.tolEnd)return;const l=S.tolEnd-Date.now();if(l<=0)return;const h=Math.floor(l/3600000),m=Math.floor((l%3600000)/60000),s=Math.floor((l%60000)/1000);const endH=new Date(S.tolEnd);const endStr=endH.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});$('tol').textContent='Encerra às '+endStr+' · '+(h>0?h+'h ':'')+ m+'m '+String(s).padStart(2,'0')+'s';}
 
 async function pollA(){const c=cfg();try{const cms=await GH.comments(c.repo,c.pat,S.inum);const p=cms.map(m=>{try{return JSON.parse(m.body);}catch{return null;}}).filter(x=>x&&x._t==='a');if(p.length>S.atts.length){const nw=p.slice(S.atts.length);S.atts=p;$('sn').textContent=S.atts.length;$('lg').style.display='block';$('lg-t').textContent=S.atts.length;nw.forEach(a=>{const d=document.createElement('div');d.className='lg-i';d.innerHTML='<span class="ln">'+esc(a.num)+'</span><span class="lt">'+esc(a.hora)+'</span>';$('lg-l').prepend(d);});}}catch{}}
 
@@ -331,10 +361,10 @@ function csv(){if(!S.atts.length){toast('Sem registos');return;}const c=cfg();co
 
 function initStu(data){
     show('v-student');$('fs-b').style.display='none';document.body.style.background='white';
-    if(!vTok(data.t,data.s,data.d)){showS('fail');return;}
+    if(!vTok(data.t,data.s,data.d)){showS('fail');autoClose();return;}
     data._scanAt=Date.now();
     const dev=getDev();
-    if(dev&&isDup(data.s)){showS('dup');$('xd-n').textContent='Nº '+dev.num;return;}
+    if(dev&&isDup(data.s)){showS('dup');$('xd-n').textContent='Nº '+dev.num;autoClose();return;}
     if(dev){showS('auto');$('xa-i').textContent=data.c;$('xa-n').textContent='Nº '+dev.num;setTimeout(()=>autoSub(data,dev),500);}
     else{showS('form');$('xf-i').textContent=data.c+' · '+dmy();window._d=data;setTimeout(()=>$('xf-n').focus(),150);}
 }
@@ -342,24 +372,25 @@ function showS(s){['s-auto','s-form','s-ok','s-dup','s-fail'].forEach(id=>$(id).
 
 async function autoSub(data,dev){
     const hora=hms();const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,ts:new Date().toISOString()};
-    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);}
-    catch(e){showS('fail');$('xe-t').textContent='Erro no registo';$('xe-m').textContent='Faz scan do QR novamente para tentar outra vez.';}
+    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));postSheets(data.g,rec);markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);autoClose();}
+    catch(e){showS('fail');$('xe-t').textContent='Erro no registo';$('xe-m').textContent='Faz scan do QR novamente para tentar outra vez.';autoClose();}
 }
 
 async function firstReg(){
     const data=window._d;if(!data)return;const num=$('xf-n').value.trim();
     if(!num){$('xf-w').classList.add('f-err');$('xf-n').focus();return;}
-    if(Date.now()-data._scanAt>120000){showS('fail');$('xe-t').textContent='Tempo esgotado';$('xe-m').textContent='Demoraste mais de 2 minutos. Faz scan do QR atual.';return;}
+    if(Date.now()-data._scanAt>120000){showS('fail');$('xe-t').textContent='Tempo esgotado';$('xe-m').textContent='Demoraste mais de 2 minutos. Faz scan do QR atual.';autoClose();return;}
     const btn=$('btn-rg');btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
     const dev=regDev(num);const hora=hms();
     const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,first:true,ts:new Date().toISOString()};
-    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);}
+    try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));postSheets(data.g,rec);markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);autoClose();}
     catch(e){btn.disabled=false;btn.textContent='Registar';toast('Erro — tenta novamente');localStorage.removeItem(DK);}
 }
 
 function route(){const h=location.hash.slice(1);if(h){const d=unpack(h);if(d&&d.t&&d.s){initStu(d);return;}}loadCfg();show('v-setup');}
 
 $('btn-test').addEventListener('click',async()=>{const r=$('cfg-repo').value.trim(),p=$('cfg-pat').value.trim();if(!r||!p){toast('Preenche repo e token');return;}$('btn-test').disabled=true;$('btn-test').innerHTML='<span class="spin"></span>';try{await GH.test(r,p);toast('Conectado');saveCfg();$('btn-go').disabled=false;}catch(e){toast('Erro: '+e.message);}finally{$('btn-test').disabled=false;$('btn-test').textContent='Testar conexão';}});
+$('btn-gs-test').addEventListener('click',async()=>{const u=$('cfg-gs').value.trim();if(!u){toast('Preenche o URL do Web App');return;}$('btn-gs-test').disabled=true;$('btn-gs-test').innerHTML='<span class="spin spin-dark"></span>';try{await fetch(u,{mode:'no-cors'});saveCfg();toast('Sheets OK — ligação enviada');}catch(e){toast('Erro: '+e.message);}finally{$('btn-gs-test').disabled=false;$('btn-gs-test').textContent='Testar Sheets';}});
 $('btn-go').addEventListener('click',start);
 $('btn-stp').addEventListener('click',stop);
 $('btn-csv').addEventListener('click',csv);

@@ -274,7 +274,13 @@ function doGet(e){
 
 function totp(k,e){let s=k+'-'+e+'-X',h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h).toString(36).toUpperCase().slice(0,6);}
 function ep(d){return Math.floor(Date.now()/(d*1000));}
-function vTok(t,k,d){const e=ep(d);return t===totp(k,e);}
+function vTok(t,k,d,emitTs){
+    if(!emitTs)return false;
+    const age=Date.now()-emitTs;
+    if(age<0||age>d*1000)return false;
+    const e=Math.floor(emitTs/(d*1000));
+    return t===totp(k,e);
+}
 
 function pack(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function unpack(s){try{return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));} catch{return null;}}
@@ -301,7 +307,7 @@ async function postSheets(url,rec){
     try{await fetch(url,{method:'POST',body:JSON.stringify({num:rec.num,hora:rec.hora,data:rec.data,disc:rec.disc,sess:rec.sess}),headers:{'Content-Type':'text/plain'},mode:'no-cors'});}catch(e){console.warn('Sheets:',e);}
 }
 
-function autoClose(){setTimeout(()=>{window.close();document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:#6b7280;font-size:14px;">Podes fechar esta janela.</div>';},5000);}
+function autoClose(){setTimeout(()=>{try{window.close();}catch(e){}try{window.open('','_self');window.close();}catch(e){}setTimeout(()=>{document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:#6b7280;font-size:14px;text-align:center;padding:20px;">Podes fechar esta janela.</div>';},500);},5000);}
 
 const LS='att_cfg_v6';
 let S={sid:'',inum:null,on:false,tmr:null,sec:45,total:45,codes:0,atts:[],poll:null,tolTmr:null,tolTk:null,tolEnd:null};
@@ -349,7 +355,7 @@ function end(){stop();$('tol').className='tol off';$('tol').textContent='Tempo e
 
 function mkQR(){
     if(!S.on)return;const c=cfg(),e=ep(c.dur),tok=totp(S.sid,e);
-    const url=location.origin+location.pathname+'#'+pack({t:tok,s:S.sid,d:c.dur,r:c.repo,p:c.pat,i:S.inum,c:c.cls,g:c.gs||''});
+    const url=location.origin+location.pathname+'#'+pack({t:tok,s:S.sid,d:c.dur,r:c.repo,p:c.pat,i:S.inum,c:c.cls,g:c.gs||'',e:Date.now()});
     $('qf').classList.add('fl');setTimeout(()=>{qr.clear();qr.makeCode(url);$('qf').classList.remove('fl');},120);
     S.sec=c.dur;S.codes++;$('sc').textContent=S.codes;rT();
 }
@@ -362,7 +368,7 @@ function csv(){if(!S.atts.length){toast('Sem registos');return;}const c=cfg();co
 
 function initStu(data){
     show('v-student');$('fs-b').style.display='none';document.body.style.background='white';
-    if(!vTok(data.t,data.s,data.d)){showS('fail');autoClose();return;}
+    if(!vTok(data.t,data.s,data.d,data.e)){showS('fail');autoClose();return;}
     data._scanAt=Date.now();
     const dev=getDev();
     if(dev&&isDup(data.s)){showS('dup');$('xd-n').textContent='Nº '+dev.num;autoClose();return;}

@@ -26,7 +26,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
 
-        .wrap { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+        .wrap { max-width: 600px; margin: 0 auto; padding: 16px 16px 36px; min-height: 100vh; display: flex; flex-direction: column; }
         .view { display: none; flex-direction: column; flex: 1; animation: fadeIn .25s ease; }
         .view.active { display: flex; }
 
@@ -410,6 +410,6 @@ $('fs-b').addEventListener('click',()=>{if(!document.fullscreenElement)document.
 route();
 })();
 </script>
-    <div style="text-align:center;padding:16px 0 10px;font-size:11px;color:#9ca3af;font-family:var(--font);">Desenvolvido por André Antão</div>
+    <div style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:8px 0;font-size:11px;color:#9ca3af;font-family:var(--font);background:var(--bg2);">Desenvolvido por André Antão</div>
 </body>
 </html>

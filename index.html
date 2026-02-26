@@ -308,7 +308,7 @@ async function start(){
         S.tmr=setInterval(()=>{S.sec--;rT();if(S.sec<=0)mkQR();},1000);
         S.tolEnd=Date.now()+c.tol*60000;$('tol').style.display='flex';$('tol').className='tol on';rTol();
         S.tolTk=setInterval(rTol,1000);S.tolTmr=setTimeout(end,c.tol*60000);
-        S.poll=setInterval(pollA,5000);toast('Sessão #'+S.inum+' criada');
+        S.poll=setInterval(pollA,3000);toast('Sessão #'+S.inum+' criada');
     }catch(e){toast('Erro: '+e.message);}
     finally{$('btn-go').disabled=false;$('btn-go').textContent='Iniciar sessão';}
 }
@@ -339,16 +339,14 @@ function initStu(data){
 function showS(s){['s-auto','s-form','s-ok','s-dup','s-fail'].forEach(id=>$(id).style.display='none');({auto:'s-auto',form:'s-form',ok:'s-ok',dup:'s-dup',fail:'s-fail'})[s]&&($(({auto:'s-auto',form:'s-form',ok:'s-ok',dup:'s-dup',fail:'s-fail'})[s]).style.display='block');}
 
 async function autoSub(data,dev){
-    if(!vTok(data.t,data.s,data.d)){showS('fail');return;}
     const hora=hms();const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,ts:new Date().toISOString()};
     try{await GH.comment(data.r,data.p,data.i,JSON.stringify(rec));markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;if(navigator.vibrate)navigator.vibrate([30,15,30]);}
-    catch{markDup(data.s);showS('ok');$('xo-n').textContent='Nº '+dev.num;$('xo-t').textContent=hora;}
+    catch(e){showS('fail');$('xe-t').textContent='Erro no registo';$('xe-m').textContent='Faz scan do QR novamente para tentar outra vez.';}
 }
 
 async function firstReg(){
     const data=window._d;if(!data)return;const num=$('xf-n').value.trim();
     if(!num){$('xf-w').classList.add('f-err');$('xf-n').focus();return;}
-    if(!vTok(data.t,data.s,data.d)){showS('fail');$('xe-t').textContent='Código expirado';$('xe-m').textContent='Faz scan do QR atual.';return;}
     const btn=$('btn-rg');btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
     const dev=regDev(num);const hora=hms();
     const rec={_t:'a',num:dev.num,hora,disc:data.c,data:dmy(),sess:data.s,tok:data.t,did:dev.id,first:true,ts:new Date().toISOString()};

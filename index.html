@@ -262,9 +262,9 @@ function doGet(e){
                 <button class="btn btn-green btn-block" id="btn-rg">Registar</button>
                 <div class="sc-note">O telemóvel fica associado a este número. Da próxima vez é automático.</div>
             </div></div>
-            <div id="s-ok" style="display:none;"><div class="sc"><div class="sok"><div class="ck">✓</div><h2>Presença registada</h2><p id="xo-n"></p><div class="ts" id="xo-t"></div><p class="ac" id="ac-ok">A fechar em 2s...</p></div></div></div>
-            <div id="s-dup" style="display:none;"><div class="sc"><div class="sdu"><div class="ic">✓</div><h2>Já registado</h2><p id="xd-n"></p><p style="margin-top:6px;">Presença já marcada nos últimos 5 minutos.</p><p class="ac" id="ac-dup">A fechar em 2s...</p></div></div></div>
-            <div id="s-fail" style="display:none;"><div class="sc"><div class="ser"><div class="xc">✕</div><h2 id="xe-t">Código expirado</h2><p id="xe-m">Este QR já não é válido. Faz scan do código atual.</p><p class="ac" id="ac-fail">A fechar em 2s...</p></div></div></div>
+            <div id="s-ok" style="display:none;"><div class="sc"><div class="sok"><div class="ck">✓</div><h2>Presença registada</h2><p id="xo-n"></p><div class="ts" id="xo-t"></div><p class="ac" id="ac-ok">A fechar em 5s...</p></div></div></div>
+            <div id="s-dup" style="display:none;"><div class="sc"><div class="sdu"><div class="ic">✓</div><h2>Já registado</h2><p id="xd-n"></p><p style="margin-top:6px;">Presença já marcada nos últimos 5 minutos.</p><p class="ac" id="ac-dup">A fechar em 5s...</p></div></div></div>
+            <div id="s-fail" style="display:none;"><div class="sc"><div class="ser"><div class="xc">✕</div><h2 id="xe-t">Código expirado</h2><p id="xe-m">Este QR já não é válido. Faz scan do código atual.</p><p class="ac" id="ac-fail">A fechar em 5s...</p></div></div></div>
         </div>
     </div>
 
@@ -274,7 +274,7 @@ function doGet(e){
 
 function totp(k,e){let s=k+'-'+e+'-X',h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(h).toString(36).toUpperCase().slice(0,6);}
 function ep(d){return Math.floor(Date.now()/(d*1000));}
-function vTok(t,k,d){const e=ep(d);return t===totp(k,e)||t===totp(k,e-1);}
+function vTok(t,k,d){const e=ep(d);return t===totp(k,e);}
 
 function pack(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function unpack(s){try{return JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));} catch{return null;}}
@@ -301,7 +301,7 @@ async function postSheets(url,rec){
     try{await fetch(url,{method:'POST',body:JSON.stringify({num:rec.num,hora:rec.hora,data:rec.data,disc:rec.disc,sess:rec.sess}),headers:{'Content-Type':'text/plain'},mode:'no-cors'});}catch(e){console.warn('Sheets:',e);}
 }
 
-function autoClose(){setTimeout(()=>{window.close();document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:#6b7280;font-size:14px;">Podes fechar esta janela.</div>';},2000);}
+function autoClose(){setTimeout(()=>{window.close();document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:#6b7280;font-size:14px;">Podes fechar esta janela.</div>';},5000);}
 
 const LS='att_cfg_v6';
 let S={sid:'',inum:null,on:false,tmr:null,sec:45,total:45,codes:0,atts:[],poll:null,tolTmr:null,tolTk:null,tolEnd:null};
